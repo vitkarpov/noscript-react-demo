@@ -1,0 +1,16 @@
+body {
+  font: 12pt Arial;
+  color: #111;
+  background: #eee;
+}
+.island {
+  background: #fff;
+  width: 800px;
+  padding: 1em;
+  margin: 1em auto;
+  box-shadow: 0 1px 3px #ddd;
+}
+.image-thumb {
+  display: inline-block;
+  margin: 1em;
+}
