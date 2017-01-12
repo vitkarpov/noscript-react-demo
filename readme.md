@@ -1,3 +1,7 @@
+```
+$ npm install && npm run build
+```
+
 ## Изменения в NS
 
 1. `ns.initMainView`
