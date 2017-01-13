@@ -96,6 +96,21 @@
 
 	// ----------------------------------------------------------------------------------------------------------------- //
 
+	// Экшена
+
+	ns.action.define('change-photo', function (e, params) {
+	    // все изменения моделей только в экшенах!
+	    ns.Model.get('photo', {
+	        'image-id': params.id
+	    }).set('.url_', 'https://img4-fotki.yandex.net/get/102548/104468197.e/0_STATICecb8c_79d89e82_');
+
+	    // когда все модели поменялись и мы уверены,
+	    // что все состояние приложения консистентно — запускаем апдейт
+	    ns.page.go();
+	});
+
+	// ----------------------------------------------------------------------------------------------------------------- //
+
 	// React
 
 	var Photo = function Photo(_ref) {
@@ -135,7 +150,7 @@
 	                null,
 	                '\u041A \u043F\u0440\u0438\u043C\u0435\u0440\u0443, \u0432\u043E\u0442 \u0444\u043E\u0442\u043A\u0438:',
 	                this._getPhotos(),
-	                this.props.params['image-id'] ? this._getPhoto(this.props.params['image-id']) : null
+	                this.props.params['image-id'] ? this._getPhotoPreview(this.props.params['image-id']) : null
 	            );
 	        }
 	    },
@@ -170,6 +185,20 @@
 	                        );
 	                }
 	            }
+	        );
+	    },
+	    _getPhotoPreview: function _getPhotoPreview(id) {
+	        return React.createElement(
+	            'div',
+	            null,
+	            this._getPhoto(id),
+	            React.createElement(
+	                'button',
+	                { onClick: function onClick() {
+	                        ns.action.run('change-photo', { id: id });
+	                    } },
+	                '\u041F\u043E\u043C\u0435\u043D\u044F\u0442\u044C \u0444\u043E\u0442\u043E\u0447\u043A\u0443'
+	            )
 	        );
 	    },
 	    _getPhoto: function _getPhoto(id) {
