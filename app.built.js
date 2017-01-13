@@ -42,9 +42,11 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+
+	var DataProvider = __webpack_require__(1);
 
 	ns.log.exception = function () {
 	    console.log(arguments);
@@ -70,23 +72,41 @@
 
 	ns.Model.define('photos', {
 	    split: {
-	        items: '.images.image',
+	        items: '.images',
 	        model_id: 'photo',
 	        params: {
-	            'id': '.id'
+	            'image-id': '.id'
+	        }
+	    },
+	    methods: {
+	        request: function request() {
+	            var _this = this;
+
+	            return new Promise(function (res) {
+	                setTimeout(function () {
+	                    _this.setData({
+	                        images: [{ id: 1, url_: 'https://img-fotki.yandex.ru/get/56796/83105148.37/0_8f00e_6798e037_' }, { id: 2, url_: 'https://img-fotki.yandex.net/get/174613/90684498.e/0_STATICf0880_99482658_' }, { id: 3, url_: 'https://img4-fotki.yandex.net/get/167717/198922885.8d/0_STATIC1abaf4_b1f83682_' }]
+	                    });
+	                    res();
+	                }, 1000);
+	            });
 	        }
 	    }
 	});
 
 	// ----------------------------------------------------------------------------------------------------------------- //
 
-	// Тестовые данные.
-	var photos = ns.Model.get('photos').setData({ images: { image: [] } });
-	photos.insert([ns.Model.get('photo', { 'image-id': 1 }).setData({ id: 1, url_: 'https://img-fotki.yandex.ru/get/56796/83105148.37/0_8f00e_6798e037_' }), ns.Model.get('photo', { 'image-id': 2 }).setData({ id: 2, url_: 'https://img-fotki.yandex.net/get/174613/90684498.e/0_STATICf0880_99482658_' }), ns.Model.get('photo', { 'image-id': 3 }).setData({ id: 3, url_: 'https://img4-fotki.yandex.net/get/167717/198922885.8d/0_STATIC1abaf4_b1f83682_' })]);
-
-	// ----------------------------------------------------------------------------------------------------------------- //
-
 	// React
+
+	var Photo = function Photo(_ref) {
+	    var url = _ref.url,
+	        src = _ref.src;
+	    return React.createElement(
+	        'a',
+	        { href: url },
+	        React.createElement('img', { src: src + 'XS' })
+	    );
+	};
 
 	window.APP = React.createClass({
 	    displayName: 'APP',
@@ -120,24 +140,47 @@
 	        }
 	    },
 	    _getPhotos: function _getPhotos() {
-	        var _this = this;
+	        var _this2 = this;
 
 	        return React.createElement(
-	            'div',
-	            null,
-	            ns.Model.get('photos').models.map(function (model) {
-	                return _this._getPhoto(model.get('.id'));
-	            })
+	            DataProvider,
+	            { model: 'photos' },
+	            function (status, data) {
+	                switch (status) {
+	                    case 'ok':
+	                        return React.createElement(
+	                            'div',
+	                            null,
+	                            data.images.map(function (_ref2) {
+	                                var id = _ref2.id;
+	                                return _this2._getPhoto(id);
+	                            })
+	                        );
+	                    case 'loading':
+	                        return React.createElement(
+	                            'div',
+	                            null,
+	                            '\u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430...'
+	                        );
+	                    case 'error':
+	                        return React.createElement(
+	                            'div',
+	                            null,
+	                            '\u043E\u0448\u0438\u0431\u043A\u0430 :('
+	                        );
+	                }
+	            }
 	        );
 	    },
-
 	    _getPhoto: function _getPhoto(id) {
-	        var photo = ns.Model.get('photo', { 'image-id': id });
-
 	        return React.createElement(
-	            'a',
-	            { href: ns.router.url('/photos/' + id) },
-	            React.createElement('img', { src: photo.get('.url_') + 'XS' })
+	            DataProvider,
+	            { model: 'photo', params: { 'image-id': id }, key: id },
+	            function (status, data) {
+	                return React.createElement(Photo, {
+	                    url: ns.router.url('/photos/' + data.id),
+	                    src: data.url_ });
+	            }
 	        );
 	    },
 	    render: function render() {
@@ -170,6 +213,48 @@
 
 	ns.init();
 	ns.page.go();
+
+/***/ },
+/* 1 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	ns.queue = [];
+
+	/**
+	 * @example
+	 *
+	 *    ```js
+	 *    <DataProvider model="photos" params={...}>
+	 *       {(status, data) => {
+	 *           switch (status) {
+	 *               case 'ok':
+	 *                   return <MySuperView prop1={data.foo} prop2={data.bar} />;
+	 *               case 'loading':
+	 *                   return <Spin />;
+	 *               case 'error':
+	 *                   return <Error />;
+	 *           }
+	 *       }}
+	 *   </DataProvider>
+	 *   ```
+	 */
+	module.exports = function (props) {
+	    var layout = props.children;
+	    var model = ns.Model.get(props.model, props.params);
+
+	    if (model.isValid()) {
+	        return layout('ok', model.getData());
+	    } else if (model.getError()) {
+	        return layout('error', model.getError());
+	    }
+	    ns.queue.push({
+	        id: props.model,
+	        params: props.params
+	    });
+	    return layout('loading');
+	};
 
 /***/ }
 /******/ ]);
