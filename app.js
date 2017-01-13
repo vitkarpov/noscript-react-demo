@@ -1,3 +1,5 @@
+var DataProvider = require('./data-provider');
+
 ns.log.exception = function() {
     console.log(arguments);
 };
@@ -22,27 +24,39 @@ ns.Model.define('photo', {
 
 ns.Model.define('photos', {
     split: {
-        items: '.images.image',
+        items: '.images',
         model_id: 'photo',
         params: {
-            'id': '.id'
+            'image-id': '.id'
+        }
+    },
+    methods: {
+        request() {
+            return new Promise((res) => {
+                setTimeout(() => {
+                    this.setData({
+                        images: [
+                            { id: 1, url_: 'https://img-fotki.yandex.ru/get/56796/83105148.37/0_8f00e_6798e037_' },
+                            { id: 2, url_: 'https://img-fotki.yandex.net/get/174613/90684498.e/0_STATICf0880_99482658_' },
+                            { id: 3, url_: 'https://img4-fotki.yandex.net/get/167717/198922885.8d/0_STATIC1abaf4_b1f83682_' }
+                        ]
+                    });
+                    res();
+                }, 1000);
+            });
         }
     }
 });
 
 // ----------------------------------------------------------------------------------------------------------------- //
 
-// Тестовые данные.
-var photos = ns.Model.get('photos').setData({ images: { image: [] } });
-photos.insert([
-    ns.Model.get('photo', { 'image-id': 1 }).setData({ id: 1, url_: 'https://img-fotki.yandex.ru/get/56796/83105148.37/0_8f00e_6798e037_' }),
-    ns.Model.get('photo', { 'image-id': 2 }).setData({ id: 2, url_: 'https://img-fotki.yandex.net/get/174613/90684498.e/0_STATICf0880_99482658_' }),
-    ns.Model.get('photo', { 'image-id': 3 }).setData({ id: 3, url_: 'https://img4-fotki.yandex.net/get/167717/198922885.8d/0_STATIC1abaf4_b1f83682_' })
-]);
-
-// ----------------------------------------------------------------------------------------------------------------- //
-
 // React
+
+const Photo = ({ url, src }) => (
+    <a href={url}>
+        <img src={src + 'XS'} />
+    </a>
+);
 
 window.APP = React.createClass({
     // бокс
@@ -71,20 +85,29 @@ window.APP = React.createClass({
     },
     _getPhotos() {
         return (
-            <div>
-                {ns.Model.get('photos').models.map(
-                    (model) => this._getPhoto(model.get('.id'))
-                )}
-            </div>
+            <DataProvider model="photos">
+                {(status, data) => {
+                    switch (status) {
+                        case 'ok':
+                            return <div>{data.images.map(({ id }) => this._getPhoto(id))}</div>
+                        case 'loading':
+                            return <div>загрузка...</div>;
+                        case 'error':
+                            return <div>ошибка :(</div>;
+                    }
+                }}
+            </DataProvider>
         );
     },
-    _getPhoto: function(id) {
-        var photo = ns.Model.get('photo', { 'image-id': id });
-
+    _getPhoto(id) {
         return (
-            <a href={ns.router.url('/photos/' + id)}>
-                <img src={photo.get('.url_') + 'XS'} />
-            </a>
+            <DataProvider model="photo" params={{'image-id': id}} key={id}>
+                {(status, data) => (
+                    <Photo
+                        url={ns.router.url('/photos/' + data.id)}
+                        src={data.url_} />
+                )}
+            </DataProvider>
         );
     },
     render() {
