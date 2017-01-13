@@ -10,6 +10,7 @@ ns.page.startUpdate = function(route) {
         function() {
             if (ns.queue.length > 0) {
                 ns.request(ns.queue).then(function() {
+                    ns.queue = [];
                     ns.page.startUpdate(route);
                 });
             }
