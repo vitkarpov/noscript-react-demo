@@ -50,6 +50,21 @@ ns.Model.define('photos', {
 
 // ----------------------------------------------------------------------------------------------------------------- //
 
+// Экшена
+
+ns.action.define('change-photo', function(e, params) {
+    // все изменения моделей только в экшенах!
+    ns.Model.get('photo', {
+        'image-id': params.id
+    }).set('.url_', 'https://img4-fotki.yandex.net/get/102548/104468197.e/0_STATICecb8c_79d89e82_');
+
+    // когда все модели поменялись и мы уверены,
+    // что все состояние приложения консистентно — запускаем апдейт
+    ns.page.go();
+});
+
+// ----------------------------------------------------------------------------------------------------------------- //
+
 // React
 
 const Photo = ({ url, src }) => (
@@ -77,7 +92,7 @@ window.APP = React.createClass({
                     К примеру, вот фотки:
                     {this._getPhotos()}
                     {this.props.params['image-id'] ?
-                        this._getPhoto(this.props.params['image-id']) :
+                        this._getPhotoPreview(this.props.params['image-id']) :
                         null}
                 </div>
             );
@@ -97,6 +112,18 @@ window.APP = React.createClass({
                     }
                 }}
             </DataProvider>
+        );
+    },
+    _getPhotoPreview(id) {
+        return (
+            <div>
+                {this._getPhoto(id)}
+                <button onClick={() => {
+                    ns.action.run('change-photo', { id });
+                }}>
+                    Поменять фоточку
+                </button>
+            </div>
         );
     },
     _getPhoto(id) {
